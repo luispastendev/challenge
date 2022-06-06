@@ -6,15 +6,15 @@ instrucciones:
 
 ## Problema 1:
 ```bash
-php problema1.php
-# su archivo de input es input_problema1.txt y genera output_problema1.txt
+php problema1.php -i "<path_input_file>"
+# el archivo de salida sera <path_input_file>_output
 ```
 
 
 ## Problema 2:
 ```bash
-php problema2.php
-# su archivo de input es input_problema2.txt y genera output_problema2.txt
+php problema2.php -i "<path_input_file>"
+# el archivo de salida sera <path_input_file>_output
 ```
 
 ## Extra

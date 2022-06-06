@@ -138,6 +138,7 @@ class Validator
         $messages = [
             'inRange' => 'No se encuentra dentro del rango permitido',
             'alphaNumeric' => 'No es alfanumerico',
+            'isInt' => 'No es un numero entero',
         ];
 
         return $messages[$key] ?? null;
@@ -156,6 +157,11 @@ final class Rules
     {
         $range = explode(',', $params);
         return !($input < $range[0] || $input > $range[1]);
+    }
+
+    public function isInt($input, ?string $params) : bool
+    {
+        return (bool) preg_match("/^[0-9]+$/", $input);
     }
 }
 

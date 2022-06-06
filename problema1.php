@@ -11,10 +11,13 @@ final class Transmitter extends Base
      * @var array
      */
     protected $validationRules = [
-        'm1'      => 'inRange[2,50]', 
-        'm2'      => 'inRange[2,50]',
-        'n'       => 'inRange[3,3000]',
-        'message' => 'alphaNumeric'
+        'len_m1'      => 'inRange[2,50]', 
+        'len_m2'      => 'inRange[2,50]',
+        'len_n'       => 'inRange[3,5000]',
+        'm1'          => 'inRange[2,50]',
+        'm2'          => 'inRange[2,50]',
+        'message'     => 'inRange[3,5000]',
+        'm'           => 'alphaNumeric'
     ];
 
     /**
@@ -32,13 +35,16 @@ final class Transmitter extends Base
     public function solve() : string
     { 
         list($lengths,$m1,$m2,$message) = FileHandler::readFiles($this->inputFile);
-        list($m1len, $m2len, $nlen)     = explode(" ", $lengths);
+        list($m1len, $m2len, $nlen)     = explode(" ", $lengths); // line 1
         
         $inputs = [
-            'm1'      => (int)$m1len, 
-            'm2'      => (int)$m2len,
-            'n'       => (int)$nlen,
-            'message' => $message
+            'len_m1'  => (int)$m1len, 
+            'len_m2'  => (int)$m2len,
+            'len_n'   => (int)$nlen,
+            'm1'      => strlen($m1),
+            'm2'      => strlen($m2),
+            'message' => strlen($message),
+            'm'       => $message
         ];
 
         if (!$this->validate($inputs)) {
@@ -47,9 +53,12 @@ final class Transmitter extends Base
         };
         
         $this->message = $this->fixMessage($message);
-
-        $output =  $this->inMessage($m1) . PHP_EOL;
-        $output .= $this->inMessage($m2) . PHP_EOL;
+        
+        $instructions = $this->checkInstructions([
+            'm1' => $m1, 
+            'm2' => $m2
+        ]);
+        $output = $this->inMessage($instructions);
 
         try {
 
@@ -62,14 +71,40 @@ final class Transmitter extends Base
     }
 
     /**
+     * Sanea las instrucciones para que no tengan mas de 2 caracteres seguidos repetidos
+     *
+     * @param array $instructions
+     * @return array
+     */
+    private function checkInstructions(array $instructions) : array
+    {
+        foreach ($instructions as $key => $instruction) {
+            $instructions[$key] = $this->fixMessage($instruction);
+        }
+
+        return $instructions;
+    }
+
+    /**
      * La instruccion se encuentra en el mensaje
      *
      * @param string $match
      * @return string
      */
-    private function inMessage(string $match) : string
+    private function inMessage(array $instructions) : string
     {
-        return strpos($this->message, $match) ? "SI" : "NO";
+        $matches = 0;
+        $output  = '';
+
+        foreach ($instructions as $instruction) {
+            $exist = (bool) strpos($this->message, $instruction); 
+            if ($exist) $matches++;
+            $output .= ($exist ? "SI" : "NO") . PHP_EOL ;
+        }
+
+        if($matches > 1) throw new Exception("El mensaje no puede contener mas de 1 instrucción válida.");
+
+        return $output;
     }
 
     /**
@@ -99,8 +134,6 @@ final class Transmitter extends Base
 
 // CLIENT CODE
 
-echo (new Transmitter(
-    'input_problema1.txt', // path del archivo de entrada
-    'output_problema1.txt' // path del archivo de salida
-))->solve();
-
+echo (new Transmitter)
+    ->setInput(getopt("i:", ['input']))
+    ->solve();

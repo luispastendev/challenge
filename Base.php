@@ -38,16 +38,56 @@ class Base {
      * @param string $inputFile
      * @param string $outputFile
      */
-    public function __construct(string $inputFile, string $outputFile)
+    public function __construct()
     {
         $this->validator  = new Validator;
-        $this->inputFile  = $inputFile;
-        $this->outputFile = $outputFile;
     }
 
-    public function validate(array $inputs) : bool {
+
+    /**
+     * Funcion auxiliar para validar
+     *
+     * @param array $inputs
+     * @param array $rules
+     * @return boolean
+     */
+    public function validate(array $inputs, array $rules = []) : bool {
+
+        $rules = empty($rules) ? $this->validationRules : $rules;
+        
         return $this->validator
-            ->setRules($this->validationRules)
+            ->setRules($rules)
             ->run($inputs);
+    }
+
+    /**
+     * Valida y genera archivo de entrada y salida
+     *
+     * @param array $inputs
+     * @return $this
+     */
+    public function setInput(array $inputs) : self
+    {
+        if (!isset($inputs['i'])) {
+            exit("Ingresa archivo de prueba ejem: 'php problema1.php -i input.txt'");
+        }
+
+        if (!file_exists($inputs['i'])) {
+            throw new Exception("Archivo no encontrado.");
+        }
+
+        $ext  = pathinfo($inputs['i'], PATHINFO_EXTENSION);
+        $name = pathinfo($inputs['i'], PATHINFO_FILENAME);
+
+        $allowed = ["", "txt"];
+
+        if (!in_array($ext, $allowed)) {
+            throw new Exception("Extension inválida.");
+        }
+
+        $this->inputFile  = $inputs['i'];
+        $this->outputFile = "{$name}_output.txt";
+
+        return $this;
     }
 }

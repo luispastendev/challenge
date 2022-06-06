@@ -13,7 +13,7 @@ final class Game extends Base
     private $rounds;
 
     /**
-     * Marcador amulado de los jugadores
+     * Marcadores de los jugadores
      *
      * @var array
      */
@@ -25,7 +25,7 @@ final class Game extends Base
      * @var array
      */
     protected $validationRules = [
-        'rounds' => 'inRange[1,10000]', 
+        'lenRounds' => 'inRange[1,10000]|isInt', 
     ];
 
     /**
@@ -37,16 +37,38 @@ final class Game extends Base
     {
         $data = FileHandler::readFiles($this->inputFile);
 
-        $this->rounds = (int)array_shift($data);
-        $this->scores = array_slice($data,0,$this->rounds);
-
-        if (!$this->validate(['rounds' => $this->rounds])) {
+        $this->rounds = array_shift($data);
+        $this->scores = $data;
+        
+        if (!$this->validate([
+            'lenRounds' => $this->rounds, 
+        ])) {
             echo $this->validator->getErrors();
             exit;
         }
 
-        $results = $this->getResults();
+        $this->validateScores();
+            
+        $winner = $this->accumulateScores()->getWinner($this->getResults());
 
+        try {
+            
+            FileHandler::writeFile($this->outputFile, $winner);
+            return "Resultados generados en {$this->outputFile}";
+            
+        } catch (\Throwable $th) {
+            return $th->getMessage();
+        }
+    }
+
+    /**
+     * Obtiene al jugador que tiene la mayor ventaja en alguna ronda
+     *
+     * @param array $results
+     * @return string
+     */
+    private function getWinner(array $results) : string
+    {
         $winner = [
             'player' => '',
             'diff' => ''
@@ -58,16 +80,7 @@ final class Game extends Base
             }
         }
 
-        $contents = "{$winner['player']} {$winner['diff']}" . PHP_EOL;
-
-        try {
-            
-            FileHandler::writeFile($this->outputFile, $contents);
-            return "Resultados generados en {$this->outputFile}";
-            
-        } catch (\Throwable $th) {
-            return $th->getMessage();
-        }
+        return "{$winner['player']} {$winner['diff']}" . PHP_EOL;
     }
     
     /**
@@ -78,25 +91,77 @@ final class Game extends Base
     private function getResults() : array
     {
         $results = [];
+
         foreach ($this->scores as $score) {
 
-            list($player1, $player2) = explode(" ",$score);
-            
-            $score_winner = $player1 > $player2 ? 1 : 2;
-            $score_diff   = abs($player1 - $player2);
+            list($player1, $player2) = $score;
+
+            $score_round = $player1 > $player2 ? 1 : 2;
+            $score_round_diff   = abs($player1 - $player2);
             
             $results[] = [
-                'player' => $score_winner,
-                'diff'   => $score_diff
+                'player' => $score_round,
+                'diff'   => $score_round_diff
             ];
         }
+
         return $results;
     }
+
+    /**
+     * valida y sanea los puntajes
+     *
+     * @return array
+     */
+    private function validateScores() : array
+    {
+
+        if (count($this->scores) < $this->rounds) {
+            throw new Exception("Debe ingresar: {$this->rounds} rondas");
+        }
+
+        $output = [];
+        foreach ($this->scores as $round) {
+            $scores =  explode(" ", $round);
+
+            foreach ($scores as $key => $score) {
+
+                if (!$this->validate(['n' => $score], ['n' => 'isInt'])) {
+                    echo $this->validator->getErrors() . "{$score}";
+                    exit;
+                }
+
+                $scores[$key] = (int)$score;
+            }
+
+            $output[] = $scores;
+        }
+
+        return $this->scores = $output;
+    }
+
+    /**
+     * Acumula los puntajes con la ronda anterior
+     *
+     * @return self
+     */
+    private function accumulateScores() : self
+    {
+
+        for ($i=0; $i < count($this->scores); $i++) { 
+            if (isset($this->scores[$i - 1])) {
+                $this->scores[$i][0] += $this->scores[$i - 1][0];
+                $this->scores[$i][1] += $this->scores[$i - 1][1];
+            }
+        }
+
+        return $this;
+    }
+
 }
 
 // CLIENT CODE
-echo (new Game(
-    'input_problema2.txt', // path del archivo de entrada
-    'output_problema2.txt' // path del archivo de salida
-))->solve();
+echo (new Game)
+    ->setInput(getopt("i:", ['input']))
+    ->solve();
 
