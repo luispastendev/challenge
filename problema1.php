@@ -34,9 +34,9 @@ final class Transmitter extends Base
      */
     public function solve() : string
     { 
-        list($lengths,$m1,$m2,$message) = FileHandler::readFiles($this->inputFile);
-        list($m1len, $m2len, $nlen)     = explode(" ", $lengths); // line 1
-        
+        list($lengths, $m1, $m2, $message) = array_pad(FileHandler::readFiles($this->inputFile), 4, null);
+        list($m1len, $m2len, $nlen)        = array_pad(explode(" ", $lengths), 3, ""); // line 1
+
         $inputs = [
             'len_m1'  => (int)$m1len, 
             'len_m2'  => (int)$m2len,
@@ -54,14 +54,15 @@ final class Transmitter extends Base
         
         $this->message = $this->fixMessage($message);
         
-        $instructions = $this->checkInstructions([
-            'm1' => $m1, 
-            'm2' => $m2
-        ]);
-        $output = $this->inMessage($instructions);
-
         try {
 
+            $instructions = $this->checkInstructions([
+                'm1' => $m1, 
+                'm2' => $m2
+            ]);
+            
+            $output = $this->inMessage($instructions);
+            
             FileHandler::writeFile($this->outputFile, $output);
             return "Resultados generados en {$this->outputFile}";
             
@@ -79,7 +80,10 @@ final class Transmitter extends Base
     private function checkInstructions(array $instructions) : array
     {
         foreach ($instructions as $key => $instruction) {
-            $instructions[$key] = $this->fixMessage($instruction);
+            $cleanInstruction = $this->fixMessage($instruction);
+            if ($cleanInstruction !== $instruction) {
+                throw new Exception("Instruccion {$key} con caracteres repetidos");
+            }
         }
 
         return $instructions;

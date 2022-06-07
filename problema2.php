@@ -26,6 +26,7 @@ final class Game extends Base
      */
     protected $validationRules = [
         'lenRounds' => 'inRange[1,10000]|isInt', 
+        'rounds'    => 'inRange[1,10000]'
     ];
 
     /**
@@ -35,23 +36,23 @@ final class Game extends Base
      */
     public function solve() : string
     {
-        $data = FileHandler::readFiles($this->inputFile);
+        $data = array_pad(FileHandler::readFiles($this->inputFile),1,null);
 
         $this->rounds = array_shift($data);
-        $this->scores = $data;
+        $this->scores = $data ?? [];
         
         if (!$this->validate([
             'lenRounds' => $this->rounds, 
+            'rounds'    => count($this->scores)
         ])) {
             echo $this->validator->getErrors();
             exit;
         }
-
-        $this->validateScores();
-            
-        $winner = $this->accumulateScores()->getWinner($this->getResults());
-
+        
         try {
+
+            $this->validateScores();
+            $winner = $this->accumulateScores()->getWinner($this->getResults());
             
             FileHandler::writeFile($this->outputFile, $winner);
             return "Resultados generados en {$this->outputFile}";
@@ -71,7 +72,7 @@ final class Game extends Base
     {
         $winner = [
             'player' => '',
-            'diff' => ''
+            'diff'   => ''
         ];
 
         foreach ($results as $result) {

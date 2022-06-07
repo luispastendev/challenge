@@ -14,9 +14,9 @@ final class FileHandler {
             $output = [];
             while(!feof($file)) {
                 $line = trim(fgets($file));
-                if (!empty($line) || $line !== "") {
+                // if (!empty($line) || $line !== "") {
                     $output[] = $line;
-                }   
+                // }   
             }
             fclose($file);
             return $output;

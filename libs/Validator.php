@@ -47,7 +47,7 @@ class Validator
 
         foreach ($inputs as $key => $input) {
             if (array_key_exists($key, $this->rules)) {
-                $this->applyRule($input, $this->rules[$key], $key);
+                $this->applyRule($input ?? "", $this->rules[$key], $key);
             }
         }
 
